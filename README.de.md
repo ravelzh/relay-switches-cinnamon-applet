@@ -121,7 +121,8 @@ relayctl all-off
 
 Namen werden zuerst exakt, dann als eindeutiger Teilstring gesucht.
 Gruppennamen werden auf ihre Mitglieder aufgelöst. Rückgabewert ist `1`, wenn
-ein Gerät nicht erreichbar war.
+ein Gerät nicht erreichbar war. Die Ausgabe ist englisch, das Applet selbst
+folgt der Desktop-Locale.
 
 Wurde das Applet aus dem Store installiert, liegt `relayctl` im Applet-Verzeichnis
 und braucht das Ausführungsrecht:

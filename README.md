@@ -119,6 +119,7 @@ relayctl all-off
 
 Names are matched exactly first, then as an unambiguous substring. Group names
 expand to their members. The exit code is `1` if a device could not be reached.
+Its output is English, the applet itself follows the desktop locale.
 
 When the applet was installed from the store, `relayctl` sits inside the applet
 directory and needs the execute bit:
