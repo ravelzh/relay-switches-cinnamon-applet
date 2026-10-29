@@ -11,21 +11,20 @@ state back from the board.
 ## Features
 
 - Any number of switches, each with its own name, icon, hosts and paths.
-- Several hosts per switch are switched together (e.g. one power strip on two boards).
+- Several hosts per switch are switched together, e.g. one power strip on two boards.
 - Groups combine several switches into one additional switch.
 - Real status: the applet reads the status path instead of assuming the state.
 - Panel icon, optional counter (`2/4`) or the names of the active switches.
 - Periodic status polling, optional notification when a device does not answer.
-- `relayctl` CLI for scripts, hotkeys and cron — same configuration, no Cinnamon needed.
+- `relayctl` CLI for scripts, hotkeys and cron; it reads the exported
+  configuration and runs without Cinnamon.
 - English and German user interface.
 
 ## Languages
 
 The interface is available in English and German. English is the source
 language, German comes from `po/de.po`; the language follows the desktop locale,
-there is no switch inside the applet. The translations are compiled to
-`~/.local/share/locale` during installation, so the repository contains no
-generated files.
+there is no switch inside the applet.
 
 To add a language, copy `po/de.po` to `po/<language>.po`, translate the
 `msgstr` values and run the `msgfmt` loop from the installation again
@@ -53,35 +52,37 @@ done
 install -Dm 755 relayctl ~/.local/bin/relayctl
 ```
 
-Reload Cinnamon, then right-click the panel → **Applets** → **Relay Switches**:
+Reload Cinnamon (or log in again):
 
 ```bash
 dbus-send --session --dest org.Cinnamon --object-path /org/Cinnamon \
   --type=method_call org.Cinnamon.Eval string:'global.reexec_self()'
 ```
 
+Then add the applet: right-click the panel → **Applets** → **Relay Switches**.
+
 ## Configuration
 
-Right-click the applet → **Configure**.
+Right-click the applet → **Configure**. The switch list is empty after a fresh
+installation, so add your switches there.
 
 | Page | Options |
 | --- | --- |
 | Switches | Name, icon, host(s), on/off/status path per switch; groups |
-| Panel | Text next to the icon, icon, icon while something is on |
-| Behavior | Polling interval, notifications, HTTP timeout, middle click action |
+| Panel | Text next to the icon, panel icon, icon while something is on, middle click action |
+| Behavior | Polling interval, notifications, "All on"/"All off" entries, HTTP timeout |
 
-A switch only needs a name and a host — the paths default to
-`/relay?state=1`, `/relay?state=0` and `/relay`.
+A switch needs a name and at least one host. The paths are pre-filled with
+`/relay?state=1`, `/relay?state=0` and `/relay`, so for typical relay boards
+only the host has to be entered:
 
-```
-Name      Icon                Host(s)          On   Off   Status
-Coffee    coffee-symbolic     192.168.1.50     -    -     -
-Media     audio-speakers      TV, Amplifier    -    -     -
-```
+| Name | Icon | Host(s) | On | Off | Status |
+| --- | --- | --- | --- | --- | --- |
+| Coffee | coffee-symbolic | 192.168.1.50 | /relay?state=1 | /relay?state=0 | /relay |
 
-Several hosts are separated by commas. Hosts may be IP addresses or URLs
-(`http://board.local:8080`). Groups are listed on the same page and refer to
-switch names; a group is on when all of its members are on.
+Hosts are separated by commas and may be IP addresses or URLs
+(`http://board.local:8080`). Groups are rows on the same page and refer to
+switch names, e.g. *Media* = `TV, Amplifier`.
 
 ![Settings](docs/settings.png)
 
@@ -89,13 +90,18 @@ switch names; a group is on when all of its members are on.
 
 The response of the status path may be JSON (`{"on": true}`), a bare value
 (`true`, `false`, `1`, `0`, `on`, `off`) or a JSON object with one of the keys
-`on`, `state`, `relay`, `power`, `status`. If a host does not answer or returns
-something unknown, the switch is marked *offline*; it can still be switched.
+`on`, `state`, `relay`, `power`, `status`.
+
+A switch with several hosts is on only when every host reports on; if one host
+does not answer, the switch counts as *offline*. An offline switch can still be
+switched.
 
 ## CLI
 
 `relayctl` reads the configuration the applet exports to
-`~/.config/cinnamon/spices/relay-switches@ravel/switches.json`:
+`~/.config/cinnamon/spices/relay-switches@ravel/switches.json`, which is written
+whenever the configuration changes. The CLI itself needs neither Cinnamon nor
+extra packages:
 
 ```bash
 relayctl list
@@ -106,8 +112,8 @@ relayctl toggle Printer
 relayctl all-off
 ```
 
-Names are matched exactly first, then as an unambiguous substring; group names
-work the same way. Exit code is `1` if a device could not be reached.
+Names are matched exactly first, then as an unambiguous substring. Group names
+expand to their members. The exit code is `1` if a device could not be reached.
 
 ## Removal
 
@@ -115,12 +121,12 @@ work the same way. Exit code is `1` if a device could not be reached.
 rm -rf ~/.local/share/cinnamon/applets/relay-switches@ravel \
        ~/.config/cinnamon/spices/relay-switches@ravel \
        ~/.local/share/locale/*/LC_MESSAGES/relay-switches@ravel.mo
-rm -f  ~/.local/bin/relayctl            # only if the CLI was installed
+rm -f ~/.local/bin/relayctl            # only if the CLI was installed
 ```
 
 ## Notes
 
-- Requires Cinnamon 5.8 or newer; tested on 6.6.
+- Requires Cinnamon 5.8 or newer.
 - HTTP requests use `curl` (asynchronous, without a shell).
 - Symbolic icon names end in `-symbolic` and follow the panel color.
 - After changing the applet files, reload Cinnamon (Alt+F2, `r`, Enter).
