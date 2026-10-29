@@ -130,7 +130,10 @@ if [ "$COPY_SETTINGS" = 1 ]; then
         echo "No settings found ($SRC_CFG) - skipped."
     else
         mkdir -p "$(dirname "$DST_CFG")"
-        python3 "$SRC/import-settings.py" "$SRC_CFG" "$DEST/settings-schema.json" "$DST_CFG"
+        # A verbatim copy is enough: the schema checksum differs from the one in
+        # the file, so Cinnamon keeps the stored values and rewrites the format.
+        [ -f "$DST_CFG" ] && cp -f "$DST_CFG" "$DST_CFG.bak"
+        install -m 644 "$SRC_CFG" "$DST_CFG"
         if [ "${#AS_TARGET[@]}" -gt 0 ]; then
             chown "$TARGET_USER:$TARGET_GROUP" "$DST_CFG"
             [ -f "$DST_CFG.bak" ] && chown "$TARGET_USER:$TARGET_GROUP" "$DST_CFG.bak"

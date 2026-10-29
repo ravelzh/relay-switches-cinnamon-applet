@@ -20,6 +20,18 @@ Schaltern und liest den echten Zustand vom Board zurück.
 - CLI `relayctl` für Scripts, Hotkeys und Cron — nutzt dieselbe Konfiguration, ohne Cinnamon.
 - Oberfläche auf Deutsch und Englisch.
 
+## Sprachen
+
+Die Oberfläche gibt es auf Deutsch und Englisch. Englisch ist die
+Quellsprache, Deutsch kommt aus `po/de.po`; die Sprache folgt der
+Desktop-Locale, im Applet gibt es keinen Umschalter. `install.sh` kompiliert die
+Übersetzung nach `~/.local/share/locale`, im Repository liegen keine erzeugten
+Dateien.
+
+Für eine weitere Sprache `po/de.po` nach `po/<sprache>.po` kopieren, die
+`msgstr`-Werte übersetzen und `install.sh` erneut ausführen (`xgettext`/`msgmerge`
+erzeugen die String-Liste nach Änderungen neu).
+
 ## Installation
 
 ```bash
@@ -38,9 +50,6 @@ Einstellungen und Leisten-Eintrag):
 ```bash
 sudo ./install.sh --for BENUTZER --panel --cli --settings
 ```
-
-Die Übersetzungen werden bei der Installation aus `po/*.po` nach
-`~/.local/share/locale` kompiliert; im Repository liegen keine erzeugten Dateien.
 
 ## Konfiguration
 

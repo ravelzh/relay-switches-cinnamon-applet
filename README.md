@@ -19,6 +19,17 @@ state back from the board.
 - `relayctl` CLI for scripts, hotkeys and cron — same configuration, no Cinnamon needed.
 - English and German user interface.
 
+## Languages
+
+The interface is available in English and German. English is the source
+language, German comes from `po/de.po`; the language follows the desktop locale,
+there is no switch inside the applet. `install.sh` compiles the translation to
+`~/.local/share/locale`, so the repository contains no generated files.
+
+To add a language, copy `po/de.po` to `po/<language>.po`, translate the
+`msgstr` values and run `install.sh` again (`xgettext`/`msgmerge` regenerate the
+string list after changes).
+
 ## Installation
 
 ```bash
@@ -36,9 +47,6 @@ the panel entry):
 ```bash
 sudo ./install.sh --for USER --panel --cli --settings
 ```
-
-The translations are compiled from `po/*.po` during installation into
-`~/.local/share/locale`, so the repository contains no generated files.
 
 ## Configuration
 
