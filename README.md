@@ -1,192 +1,106 @@
-# Relay Switches — Cinnamon-Applet
+# Relay Switches — Cinnamon applet
 
-Ersetzt die Nemo-Scripts (`drucker-on.sh`, `kafi-off.sh`, `media-on.sh` …) durch ein
-Applet in der Leiste: ein Klick öffnet ein Menü mit Schaltern, die direkt das
-HTTP-Relaisboard schalten — inklusive echtem Status vom Gerät.
+[Deutsch](README.de.md)
 
-![Menü](docs/screenshot.png)
+Panel applet for HTTP relay boards (smart sockets, coffee machine, printer, …).
+One click opens a menu that switches the configured relays and reads the real
+state back from the board.
 
-Konfiguriert wird über den normalen Cinnamon-Dialog:
+![Menu](docs/screenshot.png)
 
-![Einstellungen](docs/settings.png)
+## Features
 
-## Funktionen
-
-* **Schalter mit echtem Status** – das Applet liest `GET /relay` (`{"on": true}`) und
-  zeigt an/aus/offline, statt den Zustand zu raten.
-* **Beliebig viele Schalter** – Name, Symbol, Host(s), Ein-/Aus-/Status-Pfad sind
-  pro Eintrag konfigurierbar.
-* **Mehrere Geräte pro Schalter** – Hosts mit Komma trennen (z. B. eine
-  Steckdosenleiste auf zwei Boards). Alle werden gemeinsam geschaltet.
-* **Gruppen** – mehrere Schalter zu einem weiteren Switch zusammenfassen
-  (z. B. `Feierabend` = Drucker + TV aus).
-* **Panel-Anzeige** – Symbol, optional `2/6` oder die Namen der aktiven Schalter.
-  Ein zweites Symbol für „etwas ist an" ist einstellbar.
-* **Statusabfrage im Hintergrund** – Intervall einstellbar (0 = nur beim Öffnen).
-* **Benachrichtigung**, wenn ein Gerät nicht antwortet.
-* **Mittelklick** frei belegbar (Status aktualisieren, alles an/aus, Menü).
-* **CLI `relayctl`** – dieselbe Konfiguration aus Nemo-Scripts, Hotkeys oder Terminal.
-
-## Aktuelle Belegung
-
-| Schalter | IP | Symbol |
-| --- | --- | --- |
-| Kaffeemaschine | 192.168.101.33 | Kaffeetasse |
-| Ladestation + Drucker | 192.168.101.36 | Stecker |
-| Bewässerung | 192.168.101.37 | Regenwolke |
-| Wohnzimmer | 192.168.101.32 | Haus |
-| TV | 192.168.101.31 | Bildschirm |
-| Shield + Audio | 192.168.101.30 | Lautsprecher |
-| **Gruppe Media** | – | Shield + Audio + TV |
-
-Diese Werte sind gleichzeitig die Defaults im Schema — eine Neuinstallation (auch
-für andere Benutzer) startet also mit genau dieser Belegung.
+- Any number of switches, each with its own name, icon, hosts and paths.
+- Several hosts per switch are switched together (e.g. one power strip on two boards).
+- Groups combine several switches into one additional switch.
+- Real status: the applet reads the status path instead of assuming the state.
+- Panel icon, optional counter (`2/4`) or the names of the active switches.
+- Periodic status polling, optional notification when a device does not answer.
+- `relayctl` CLI for scripts, hotkeys and cron — same configuration, no Cinnamon needed.
+- English and German user interface.
 
 ## Installation
 
 ```bash
-cd ~/git/tools/applets/relay-switches@ravel
-./install.sh                 # nur installieren
-./install.sh --panel --cli   # + in die obere Leiste hängen + relayctl installieren
+git clone git@gitlab.maeli.net:ravel/cinnamon-applets.git
+cd cinnamon-applets/relay-switches@ravel
+./install.sh --panel --cli --reload
 ```
 
-Danach Cinnamon neu laden (`Alt+F2` → `r` → Enter) und das Applet über
-*Rechtsklick auf die Leiste → Applets* hinzufügen, falls `--panel` nicht genutzt wurde.
+Without `--panel`, add the applet via right-click on the panel → **Applets**.
+`--cli` installs `relayctl` to `~/.local/bin`, `--reload` restarts Cinnamon.
 
-Für einen anderen Benutzer (z. B. ein zweites Konto auf demselben Rechner):
+Install for another user on the same machine (including your own settings and
+the panel entry):
 
 ```bash
-sudo ./install.sh --for raveloffice --panel --cli --settings
+sudo ./install.sh --for USER --panel --cli --settings
 ```
 
-Das kopiert die Dateien mit korrekten Besitzrechten nach
-`/home/raveloffice/.local/share/cinnamon/...`, hängt das Applet über die
-D-Bus-Sitzung dieses Benutzers in seine Leiste, installiert `relayctl` dort und
-übernimmt mit `--settings` die eigenen Schalter/Gruppen/Einstellungen
-(Vorlage: `~/.config/cinnamon/spices/relay-switches@ravel/`).
+The translations are compiled from `po/*.po` during installation into
+`~/.local/share/locale`, so the repository contains no generated files.
 
-`--settings` baut die Zieldatei gegen das installierte Schema neu auf (nur Werte
-werden übernommen, Layout/Spalten kommen aus dem Schema, inklusive passender
-`__md5__`), eine vorhandene Datei wird als `*.json.bak` gesichert. Damit die
-laufende Sitzung die Werte übernimmt, danach einmal Cinnamon neu laden:
+## Configuration
 
-```bash
-sudo ./install.sh --for raveloffice --reload
-```
+Right-click the applet → **Configure**.
 
-Läuft für diesen Benutzer gerade kein Cinnamon, wird nur installiert — dann das
-Applet in dieser Sitzung über *Rechtsklick auf die Leiste → Applets* hinzufügen.
-
-Zum Deinstallieren:
-
-```bash
-rm -rf ~/.local/share/cinnamon/applets/relay-switches@ravel \
-       ~/.config/cinnamon/spices/relay-switches@ravel \
-       ~/.local/bin/relayctl
-```
-
-## Konfiguration
-
-Rechtsklick auf das Applet → **Konfigurieren** (oder Zahnrad im Menü).
-
-### Seite „Schalter"
-
-| Spalte | Bedeutung |
+| Page | Options |
 | --- | --- |
-| Name | Anzeigename, muss eindeutig sein (Gruppen verweisen darauf) |
-| Symbol | Icon-Name oder Datei (z. B. `printer`, `audio-speakers`, `ac-adapter-symbolic`) |
-| Hosts / IPs | `192.168.101.33` oder `http://board.local:8080`; mehrere mit Komma |
-| Ein-Pfad | Standard `/relay?state=1` |
-| Aus-Pfad | Standard `/relay?state=0` |
-| Status-Pfad | Standard `/relay` |
+| Switches | Name, icon, host(s), on/off/status path per switch; groups |
+| Panel | Text next to the icon, icon, icon while something is on |
+| Behavior | Polling interval, notifications, HTTP timeout, middle click action |
 
-Die Reihenfolge in der Liste ist die Reihenfolge im Menü. Erklärungen zu Hosts und
-Pfaden stehen als Tooltip an der Liste (Maus über „Schalter" halten); der
-Status-Pfad ist in der Tabelle rechts zu sehen (Liste ggf. breiter ziehen).
+A switch only needs a name and a host — the paths default to
+`/relay?state=1`, `/relay?state=0` and `/relay`.
 
-> Der Dialog hat eine feste Startgröße (800×600) und scrollt nicht — deshalb sind
-> die Liste und die Hilfetexte bewusst kompakt gehalten. Am Fensterrand ziehen
-> vergrößert die Ansicht, die Spalten selbst sind ebenfalls ziehbar.
-
-Ein neuer Schalter ist also nur ein neuer Eintrag — z. B. „Werkstatt" mit
-`192.168.101.40` und den Standard-Pfaden. Fertig.
-
-### Seite „Gruppen"
-
-Ein Gruppen-Eintrag erscheint als zusätzlicher Switch und legt alle Mitglieder
-gemeinsam um:
-
-| Name | Symbol | Schalter (Komma) |
-| --- | --- | --- |
-| Feierabend | system-shutdown | Drucker, TV |
-
-Der Gruppen-Switch ist „an", wenn **alle** Mitglieder an sind.
-
-### Seite „Panel"
-
-* **Text neben dem Symbol**: nichts, `2/4` oder die Namen der aktiven Schalter
-  (erscheint nur, wenn mindestens ein Schalter an ist).
-* **Symbol**: Standard `network-server-symbolic` — symbolische Icons passen sich
-  der Leistenfarbe an.
-* **Symbol, wenn etwas an ist**: z. B. ein farbiges Amber-Icon, damit der Zustand
-  sofort ins Auge fällt (leer = gleiches Symbol).
-
-### Seite „Verhalten"
-
-* Statusabfrage alle *n* Sekunden (0 = aus, Abfrage dann nur beim Öffnen des Menüs).
-* Benachrichtigung bei nicht erreichbaren Geräten.
-* Zeitlimit pro HTTP-Anfrage.
-
-## Status-Erkennung
-
-Das Applet versteht als Antwort auf den Status-Pfad:
-
-```json
-{"on": true}
+```
+Name      Icon                Host(s)          On   Off   Status
+Coffee    coffee-symbolic     192.168.1.50     -    -     -
+Media     audio-speakers      TV, Amplifier    -    -     -
 ```
 
-sowie `true` / `false`, `1` / `0`, `on` / `off`. Antwortet ein Board nicht oder
-liefert etwas Unbekanntes, gilt der Schalter als **offline** (grauer Hinweis im Menü,
-Zähler in der Kopfzeile) — geschaltet werden kann er trotzdem, dann kommt eine
-Benachrichtigung, wenn das Gerät nicht antwortet.
+Several hosts are separated by commas. Hosts may be IP addresses or URLs
+(`http://board.local:8080`). Groups are listed on the same page and refer to
+switch names; a group is on when all of its members are on.
 
-## CLI `relayctl`
+![Settings](docs/settings.png)
 
-Liest die vom Applet exportierte Konfiguration
-(`~/.config/cinnamon/spices/relay-switches@ravel/switches.json`), braucht also
-kein Cinnamon und keine zusätzlichen Abhängigkeiten:
+## Status format
+
+The response of the status path may be JSON (`{"on": true}`), a bare value
+(`true`, `false`, `1`, `0`, `on`, `off`) or a JSON object with one of the keys
+`on`, `state`, `relay`, `power`, `status`. If a host does not answer or returns
+something unknown, the switch is marked *offline*; it can still be switched.
+
+## CLI
+
+`relayctl` reads the configuration the applet exports to
+`~/.config/cinnamon/spices/relay-switches@ravel/switches.json`:
 
 ```bash
 relayctl list
 relayctl status
-relayctl on Kaffeemaschine
+relayctl on Coffee
 relayctl off Media
-relayctl toggle Drucker
+relayctl toggle Printer
 relayctl all-off
 ```
 
-Damit lassen sich die alten Nemo-Scripts ersetzen, z. B. `~/.local/share/nemo/scripts/kafi-on.sh`:
+Names are matched exactly first, then as an unambiguous substring; group names
+work the same way. Exit code is `1` if a device could not be reached.
+
+## Removal
 
 ```bash
-#!/bin/sh
-exec relayctl on Kaffeemaschine
+rm -rf ~/.local/share/cinnamon/applets/relay-switches@ravel \
+       ~/.config/cinnamon/spices/relay-switches@ravel \
+       ~/.local/share/locale/*/LC_MESSAGES/relay-switches@ravel.mo \
+       ~/.local/bin/relayctl
 ```
 
-Oder als Hotkey in Cinnamon: `relayctl toggle Media`.
+## Notes
 
-## Technisches
-
-* HTTP über `curl` (async, ohne Shell) — dieselbe Semantik wie die alten Scripts.
-* Status wird nach jedem Schaltvorgang erneut gelesen, nicht optimistisch gesetzt.
-* Konfiguration liegt in Cinnamon-Settings
-  (`~/.config/cinnamon/spices/relay-switches@ravel/`), nichts wird doppelt gepflegt.
-* Läuft ab Cinnamon 5.8, entwickelt und getestet auf Cinnamon 6.6.
-
-## Bekannte Stolpersteine
-
-* **Applet reagiert nicht nach Änderungen im Konfigurationsdialog**: Cinnamon lädt
-  Änderungen über D-Bus; nach `install.sh` einmal Cinnamon neu laden.
-* **Schalter „offline", obwohl erreichbar**: Status-Pfad prüfen
-  (`curl http://IP/relay`) und ggf. `Status-Pfad` anpassen.
-* **Symbol wird nicht angezeigt**: bei symbolischen Icons `-symbolic` im Namen
-  verwenden, sonst wird das Icon in Originalfarbe gezeichnet.
+- Requires Cinnamon 5.8 or newer; tested on 6.6.
+- HTTP requests use `curl` (asynchronous, without a shell).
+- Symbolic icon names end in `-symbolic` and follow the panel color.
+- After changing the applet files, reload Cinnamon (Alt+F2, `r`, Enter).

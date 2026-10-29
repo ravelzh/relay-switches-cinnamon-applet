@@ -8,7 +8,7 @@
         ],
         "page-switches": {
             "type": "page",
-            "title": "Schalter",
+            "title": "Switches",
             "sections": [
                 "section-info",
                 "section-switches",
@@ -25,7 +25,7 @@
         },
         "page-behavior": {
             "type": "page",
-            "title": "Verhalten",
+            "title": "Behavior",
             "sections": [
                 "section-status",
                 "section-network"
@@ -33,35 +33,28 @@
         },
         "section-info": {
             "type": "section",
-            "title": "So funktioniert's",
+            "title": "How it works",
             "keys": [
                 "info-label"
             ]
         },
         "section-switches": {
             "type": "section",
-            "title": "Relais / Steckdosen",
+            "title": "Relays / sockets",
             "keys": [
                 "switches"
             ]
         },
         "section-groups": {
             "type": "section",
-            "title": "Gruppen (mehrere Schalter mit einem Klick)",
+            "title": "Groups",
             "keys": [
                 "groups"
             ]
         },
-        "section-help": {
-            "type": "section",
-            "title": "Pfade & Platzhalter",
-            "keys": [
-                "paths-info"
-            ]
-        },
         "section-panel": {
             "type": "section",
-            "title": "Aussehen in der Leiste",
+            "title": "Panel appearance",
             "keys": [
                 "panel-display",
                 "panel-icon",
@@ -70,14 +63,14 @@
         },
         "section-click": {
             "type": "section",
-            "title": "Mittlere Maustaste",
+            "title": "Middle mouse button",
             "keys": [
                 "middle-click"
             ]
         },
         "section-status": {
             "type": "section",
-            "title": "Statusanzeige",
+            "title": "Status display",
             "keys": [
                 "poll-interval",
                 "notify-errors",
@@ -86,7 +79,7 @@
         },
         "section-network": {
             "type": "section",
-            "title": "Netzwerk",
+            "title": "Network",
             "keys": [
                 "timeout"
             ]
@@ -94,12 +87,12 @@
     },
     "info-label": {
         "type": "label",
-        "description": "Eine Zeile = ein Schalter im Menü. Mehrere Hosts (Komma) werden gemeinsam geschaltet, der Status wird direkt vom Board gelesen."
+        "description": "One row per switch in the menu. Several hosts (comma separated) are switched together; the status is read back from the board after every action."
     },
     "switches": {
         "type": "list",
-        "description": "Schalter",
-        "tooltip": "Reihenfolge = Reihenfolge im Menü, Name muss eindeutig sein.\nHost(s): 192.168.101.33 oder http://board.local:8080 - mehrere mit Komma.\nEin/Aus/Status sind Pfade, die an den Host angehängt werden; leer = Standard (/relay?state=1, /relay?state=0, /relay), \"/\" = Wurzel.",
+        "description": "Switches",
+        "tooltip": "Order of the rows is the order in the menu, names must be unique.\nHost(s): 192.168.1.50 or http://board.local:8080 - separate several with commas.\nOn/Off/Status are paths appended to the host; leave empty for the defaults (/relay?state=1, /relay?state=0, /relay).",
         "columns": [
             {
                 "id": "name",
@@ -108,7 +101,7 @@
             },
             {
                 "id": "icon",
-                "title": "Symbol",
+                "title": "Icon",
                 "type": "icon"
             },
             {
@@ -118,13 +111,13 @@
             },
             {
                 "id": "on_path",
-                "title": "Ein",
+                "title": "On",
                 "type": "string",
                 "default": "/relay?state=1"
             },
             {
                 "id": "off_path",
-                "title": "Aus",
+                "title": "Off",
                 "type": "string",
                 "default": "/relay?state=0"
             },
@@ -135,61 +128,13 @@
                 "default": "/relay"
             }
         ],
-        "default": [
-            {
-                "name": "Kaffeemaschine",
-                "icon": "budgie-caffeine-cup-full",
-                "hosts": "192.168.101.33",
-                "on_path": "/relay?state=1",
-                "off_path": "/relay?state=0",
-                "status_path": "/relay"
-            },
-            {
-                "name": "Ladestation + Drucker",
-                "icon": "ac-adapter-symbolic",
-                "hosts": "192.168.101.36",
-                "on_path": "/relay?state=1",
-                "off_path": "/relay?state=0",
-                "status_path": "/relay"
-            },
-            {
-                "name": "Bewässerung",
-                "icon": "weather-showers-symbolic",
-                "hosts": "192.168.101.37",
-                "on_path": "/relay?state=1",
-                "off_path": "/relay?state=0",
-                "status_path": "/relay"
-            },
-            {
-                "name": "Wohnzimmer",
-                "icon": "user-home-symbolic",
-                "hosts": "192.168.101.32",
-                "on_path": "/relay?state=1",
-                "off_path": "/relay?state=0",
-                "status_path": "/relay"
-            },
-            {
-                "name": "TV",
-                "icon": "video-display",
-                "hosts": "192.168.101.31",
-                "on_path": "/relay?state=1",
-                "off_path": "/relay?state=0",
-                "status_path": "/relay"
-            },
-            {
-                "name": "Shield + Audio",
-                "icon": "audio-speaker-left-side",
-                "hosts": "192.168.101.30",
-                "on_path": "/relay?state=1",
-                "off_path": "/relay?state=0",
-                "status_path": "/relay"
-            }
-        ],
+        "default": [],
         "height": 165
     },
     "groups": {
         "type": "list",
-        "description": "Gruppen",
+        "description": "Groups",
+        "tooltip": "Optional: combine several switches into one additional switch. Member names must match the switch list exactly, separated by commas.",
         "columns": [
             {
                 "id": "name",
@@ -198,87 +143,80 @@
             },
             {
                 "id": "icon",
-                "title": "Symbol",
+                "title": "Icon",
                 "type": "icon"
             },
             {
                 "id": "members",
-                "title": "Schalter",
+                "title": "Switches",
                 "type": "string"
             }
         ],
-        "default": [
-            {
-                "name": "Media",
-                "icon": "audio-speakers-symbolic",
-                "members": "Shield + Audio, TV"
-            }
-        ],
-        "height": 95,
-        "tooltip": "Optional: mehrere Schalter zu einem zusätzlichen Switch bündeln. Namen exakt wie in der Schalter-Liste, mit Komma getrennt."
+        "default": [],
+        "height": 95
     },
     "panel-display": {
         "type": "combobox",
-        "description": "Text neben dem Symbol",
-        "tooltip": "Der Text erscheint nur, wenn mindestens ein Schalter an ist.",
+        "description": "Text next to the icon",
+        "tooltip": "The text only appears while at least one switch is on.",
         "default": "count",
         "options": {
-            "Nichts": "none",
-            "Anzahl (2/4)": "count",
-            "Namen der aktiven Schalter": "names"
+            "Nothing": "none",
+            "Count (2/4)": "count",
+            "Names of the active switches": "names"
         }
     },
     "panel-icon": {
         "type": "iconfilechooser",
-        "description": "Symbol (aus oder unbekannt)",
-        "tooltip": "Symbolischer Name (z. B. network-server-symbolic) oder eine Datei. Symbolische Symbole werden an die Leistenfarbe angepasst.",
+        "description": "Icon",
+        "tooltip": "Icon name (e.g. network-server-symbolic) or a file. Symbolic icons follow the panel color.",
         "default": "network-server-symbolic"
     },
     "panel-icon-on": {
         "type": "iconfilechooser",
-        "description": "Symbol, wenn etwas an ist",
-        "tooltip": "Leer lassen, um dasselbe Symbol zu verwenden. Tipp: ein farbiges Symbol (z. B. euer Amber) macht den Zustand sofort sichtbar.",
+        "description": "Icon while something is on",
+        "tooltip": "Leave empty to keep the same icon. A colored icon makes the active state visible at a glance.",
         "default": ""
     },
     "middle-click": {
         "type": "combobox",
-        "description": "Aktion bei Mittelklick",
+        "description": "Action on middle click",
         "default": "refresh",
         "options": {
-            "Nichts": "nothing",
-            "Alle einschalten": "all-on",
-            "Alle ausschalten": "all-off",
-            "Status aktualisieren": "refresh",
-            "Menü öffnen": "menu"
+            "Nothing": "nothing",
+            "Switch everything on": "all-on",
+            "Switch everything off": "all-off",
+            "Refresh status": "refresh",
+            "Open menu": "menu"
         }
     },
     "poll-interval": {
         "type": "spinbutton",
-        "description": "Status alle … abfragen",
-        "tooltip": "0 = nicht automatisch abfragen (nur beim Öffnen des Menüs).",
+        "description": "Status check interval",
+        "tooltip": "0 = no automatic polling (status is read when the menu opens).",
         "default": 30,
         "min": 0,
         "max": 600,
         "step": 5,
-        "units": "Sekunden"
+        "units": "seconds"
     },
     "notify-errors": {
         "type": "switch",
-        "description": "Benachrichtigung, wenn ein Gerät nicht antwortet",
+        "description": "Notify when a device does not respond",
         "default": true
     },
     "show-all-items": {
         "type": "switch",
-        "description": "Menüeinträge 'Alle ein-/ausschalten' anzeigen",
+        "description": "Show 'All on' / 'All off' in the menu",
         "default": true
     },
     "timeout": {
         "type": "spinbutton",
-        "description": "Zeitlimit pro Anfrage",
+        "description": "HTTP timeout",
         "default": 5,
         "min": 1,
         "max": 30,
         "step": 1,
-        "units": "Sekunden"
+        "units": "seconds"
     }
 }

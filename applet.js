@@ -1,15 +1,15 @@
-/* Relay Switches – Cinnamon Applet
+/* Relay Switches – Cinnamon applet
  *
- * Schaltet HTTP-Relaisboards, wie sie z. B. mit "relay?state=0/1" arbeiten.
- * Ersetzt die Nemo-Scripts (drucker-on.sh, kafi-off.sh, ...).
+ * Switches HTTP relay boards that are controlled by a URL such as
+ * "/relay?state=0" or "/relay?state=1".
  *
- * Konfiguration: Rechtsklick auf das Applet → "Konfigurieren"
- *   - beliebig viele Schalter (Name, Symbol, Hosts, Ein-/Aus-/Status-Pfad)
- *   - mehrere Hosts pro Schalter werden gemeinsam geschaltet (z. B. "Media")
- *   - Gruppen fassen mehrere Schalter zu einem weiteren Switch zusammen
+ * Configuration: right-click the applet → "Configure"
+ *   - any number of switches (name, icon, hosts, on/off/status path)
+ *   - several hosts per switch are switched together
+ *   - groups combine several switches into one additional switch
  *
- * Status: GET <status-pfad> wird gelesen, JSON {"on": true} oder "1"/"on" werden
- * verstanden. Nicht erreichbare Geräte werden als "offline" markiert.
+ * Status: GET <status path>. Responses such as {"on": true}, true/false,
+ * 1/0 or on/off are understood. Unreachable devices are marked "offline".
  */
 
 const Applet = imports.ui.applet;
@@ -26,11 +26,15 @@ const UUID = "relay-switches@ravel";
 
 Gettext.bindtextdomain(UUID, GLib.get_home_dir() + "/.local/share/locale");
 
-function _(str) {
-    return Gettext.dgettext(UUID, str);
+function _(text) {
+    return Gettext.dgettext(UUID, text);
 }
 
-/* Kürzt einen String auf n Zeichen inkl. Ellipse */
+function ngettext(text, plural, count) {
+    return Gettext.dngettext(UUID, text, plural, count);
+}
+
+/* Shorten a string to max characters, including the ellipsis */
 function shorten(text, max) {
     if (text.length <= max) return text;
     return text.substr(0, max - 1).trim() + "…";
@@ -44,7 +48,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
 
         this.setAllowedLayout(Applet.AllowedLayout.BOTH);
 
-        /* Konfiguration – wird gleich von den Settings überschrieben */
+        /* Configuration – replaced by the settings values below */
         this.switchesConfig = [];
         this.groupsConfig = [];
         this.panelDisplay = "count";
@@ -56,12 +60,12 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         this.notifyErrors = true;
         this.showAllItems = true;
 
-        /* Laufzeit-Zustand */
+        /* Runtime state */
         this._switches = [];
         this._groups = [];
-        this._state = {};          // Name → { on, known, offline, busy }
-        this._items = {};          // Name → PopupSwitchIconMenuItem
-        this._groupItems = {};     // Name → PopupSwitchIconMenuItem
+        this._state = {};          // name → { on, known, offline, busy }
+        this._items = {};          // name → PopupSwitchIconMenuItem
+        this._groupItems = {};     // name → PopupSwitchIconMenuItem
         this._headerItem = null;
         this._pollSource = 0;
         this._lastRefresh = 0;
@@ -97,7 +101,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         this.settings.bind("notify-errors", "notifyErrors", null);
     }
 
-    /* ----------------------------------------------------------- Konfiguration */
+    /* ---------------------------------------------------------- Configuration */
 
     _onConfigChanged() {
         if (this._removed) return;
@@ -109,7 +113,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
             .map((row, index) => this._normalizeSwitch(row, index))
             .filter(sw => sw.hosts.length > 0);
 
-        /* Namen müssen eindeutig sein, sie sind der Schlüssel für Status und Gruppen */
+        /* Names must be unique: they are the key for state and groups */
         let seen = Object.create(null);
         this._switches.forEach(sw => {
             let base = sw.name;
@@ -122,7 +126,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
             .map((row, index) => this._normalizeGroup(row, index))
             .filter(gr => gr.members.length > 0);
 
-        /* Zustand verwaister Schalter verwerfen */
+        /* Drop state of switches that no longer exist */
         let states = {};
         this._switches.forEach(sw => {
             states[sw.name] = this._state[sw.name] ||
@@ -139,12 +143,12 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
     _normalizeSwitch(row, index) {
         row = row || {};
         let name = String(row.name === undefined ? "" : row.name).trim();
-        if (!name) name = _("Schalter %d").format(index + 1);
+        if (!name) name = _("Switch %d").format(index + 1);
 
         let hosts = String(row.hosts === undefined ? "" : row.hosts)
             .split(/[\s,;]+/)
-            .map(h => h.trim())
-            .filter(h => h.length > 0);
+            .map(host => host.trim())
+            .filter(host => host.length > 0);
 
         return {
             name: name,
@@ -159,12 +163,12 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
     _normalizeGroup(row, index) {
         row = row || {};
         let name = String(row.name === undefined ? "" : row.name).trim();
-        if (!name) name = _("Gruppe %d").format(index + 1);
+        if (!name) name = _("Group %d").format(index + 1);
 
         let members = String(row.members === undefined ? "" : row.members)
             .split(/[,;]+/)
-            .map(m => m.trim())
-            .filter(m => m.length > 0);
+            .map(member => member.trim())
+            .filter(member => member.length > 0);
 
         return {
             name: name,
@@ -178,7 +182,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         return String(icon).trim();
     }
 
-    /* Leerer Pfad → Standard, "/" → Wurzel */
+    /* Empty path → default */
     _normPath(value, fallback) {
         if (value === undefined || value === null) return fallback;
         let path = String(value).trim();
@@ -186,7 +190,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         return path;
     }
 
-    /* --------------------------------------------------------------- HTTP-Teil */
+    /* ------------------------------------------------------------------- HTTP */
 
     _url(host, path) {
         let base = /^[a-z][a-z0-9+.-]*:\/\//i.test(host) ? host : "http://" + host;
@@ -210,7 +214,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
             proc = Gio.Subprocess.new(argv,
                 Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
         } catch (e) {
-            global.logError("Relay Switch: curl konnte nicht gestartet werden: " + e);
+            global.logError("relay-switches: cannot start curl: " + e);
             callback(false, "");
             return;
         }
@@ -230,15 +234,15 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
             try {
                 callback(ok, out);
             } catch (e) {
-                global.logError("Relay Switch: " + e);
+                global.logError("relay-switches: " + e);
             }
         });
     }
 
     _parseStateText(text) {
-        let t = String(text).trim().toLowerCase();
-        if (["1", "on", "true", "yes", "an", "ein"].indexOf(t) >= 0) return true;
-        if (["0", "off", "false", "no", "aus"].indexOf(t) >= 0) return false;
+        let value = String(text).trim().toLowerCase();
+        if (["1", "on", "true", "yes", "an", "ein"].indexOf(value) >= 0) return true;
+        if (["0", "off", "false", "no", "aus"].indexOf(value) >= 0) return false;
         return null;
     }
 
@@ -271,7 +275,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         return null;
     }
 
-    /* Status aller Hosts eines Schalters abfragen */
+    /* Read the status of every host of a switch */
     _querySwitch(sw, callback) {
         let total = sw.hosts.length;
         if (total === 0) {
@@ -288,16 +292,15 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
 
                 if (++done < total) return;
 
-                let offline = values.some(v => v === null);
                 callback({
-                    on: values.every(v => v === true),
-                    offline: offline
+                    on: values.every(value => value === true),
+                    offline: values.some(value => value === null)
                 });
             });
         });
     }
 
-    /* Ein-/Ausschalten auf allen Hosts eines Schalters */
+    /* Switch every host of a switch on or off */
     _setHosts(sw, on, callback) {
         let total = sw.hosts.length;
         if (total === 0) {
@@ -317,7 +320,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         });
     }
 
-    /* ------------------------------------------------------------------- Menü */
+    /* ------------------------------------------------------------------- Menu */
 
     _iconType(name) {
         return /-symbolic(\.svg)?$/.test(name) ? St.IconType.SYMBOLIC : St.IconType.FULLCOLOR;
@@ -361,12 +364,12 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
             let allOn = new PopupMenu.PopupIconMenuItem(
-                _("Alle einschalten"), "media-playback-start", St.IconType.SYMBOLIC);
+                _("All on"), "media-playback-start", St.IconType.SYMBOLIC);
             allOn.connect("activate", () => this._setAll(true));
             this.menu.addMenuItem(allOn);
 
             let allOff = new PopupMenu.PopupIconMenuItem(
-                _("Alle ausschalten"), "media-playback-stop", St.IconType.SYMBOLIC);
+                _("All off"), "media-playback-stop", St.IconType.SYMBOLIC);
             allOff.connect("activate", () => this._setAll(false));
             this.menu.addMenuItem(allOff);
         }
@@ -374,12 +377,12 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         let refreshItem = new PopupMenu.PopupIconMenuItem(
-            _("Status aktualisieren"), "view-refresh", St.IconType.SYMBOLIC);
+            _("Refresh status"), "view-refresh", St.IconType.SYMBOLIC);
         refreshItem.connect("activate", () => this._refreshAll(true));
         this.menu.addMenuItem(refreshItem);
 
         let configItem = new PopupMenu.PopupIconMenuItem(
-            _("Einstellungen"), "preferences-system", St.IconType.SYMBOLIC);
+            _("Settings"), "preferences-system", St.IconType.SYMBOLIC);
         configItem.connect("activate", () => {
             if (typeof this.configureApplet === "function") {
                 this.configureApplet();
@@ -454,12 +457,15 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
             if (st.offline) offline++;
         });
 
-        let text = _("Relais") + " · " + on + "/" + this._switches.length + " " + _("an");
-        if (offline > 0) text += " · " + offline + " " + _("offline");
+        let text = _("Relays") + " · " + _("%d of %d on").format(on, this._switches.length);
+        if (offline > 0) {
+            text += " · " +
+                ngettext("%d device offline", "%d devices offline", offline).format(offline);
+        }
         this._headerItem.label.set_text(text);
     }
 
-    /* --------------------------------------------------------------- Aktionen */
+    /* ---------------------------------------------------------------- Actions */
 
     _onSwitchToggled(sw, value) {
         if (this._stateOf(sw.name).busy) return;
@@ -468,7 +474,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
 
     _onGroupToggled(gr, value) {
         gr.members.forEach(name => {
-            let sw = this._switches.find(s => s.name === name);
+            let sw = this._switches.find(candidate => candidate.name === name);
             if (!sw) return;
             if (this._stateOf(sw.name).busy) return;
             this._applySwitch(sw, value);
@@ -482,7 +488,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         this._renderGroupFor(sw.name);
 
         this._setHosts(sw, on, (failed, total) => {
-            /* Danach echten Zustand vom Board lesen – nicht raten */
+            /* Read the real state from the board afterwards – do not guess */
             this._querySwitch(sw, result => {
                 if (this._removed) return;
 
@@ -497,8 +503,8 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
                 this._updatePanel();
 
                 if (failed > 0 && this.notifyErrors) {
-                    Main.notify(_("Relais nicht erreichbar"),
-                        _("%s: %d von %d Geräten antworten nicht.")
+                    Main.notify(_("Relay unreachable"),
+                        _("%s: %d of %d devices did not respond.")
                             .format(sw.name, failed, total));
                 }
 
@@ -524,7 +530,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         if (this._removed) return;
 
         let now = GLib.get_monotonic_time();
-        if (!force && (now - this._lastRefresh) < 400000) return;   // 0,4 s Bremse
+        if (!force && (now - this._lastRefresh) < 400000) return;   // 0.4 s throttle
         this._lastRefresh = now;
 
         this._switches.forEach(sw => {
@@ -570,7 +576,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         let total = this._switches.length;
         let active = [];
         let offline = 0;
-        let lines = [_("Relais-Steuerung")];
+        let lines = [_("Relay control")];
 
         this._switches.forEach(sw => {
             let st = this._stateOf(sw.name);
@@ -579,9 +585,9 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
                 offline++;
                 status = _("offline");
             } else if (!st.known) {
-                status = _("unbekannt");
+                status = _("unknown");
             } else {
-                status = st.on ? _("an") : _("aus");
+                status = st.on ? _("on") : _("off");
             }
             if (st.on) active.push(sw.name);
             lines.push(sw.name + ": " + status);
@@ -597,7 +603,10 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         }
         this.set_applet_label(label);
 
-        if (offline > 0) lines.push("", offline + " " + _("Gerät(e) offline"));
+        if (offline > 0) {
+            lines.push("", ngettext("%d device offline", "%d devices offline", offline)
+                .format(offline));
+        }
         this.set_applet_tooltip(lines.join("\n"));
 
         let icon = (active.length > 0 && this.panelIconOn) ? this.panelIconOn : this.panelIcon;
@@ -623,11 +632,11 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
                 this.set_applet_icon_name(icon);
             }
         } catch (e) {
-            global.logError("Relay Switch: Symbol '" + icon + "' nicht gesetzt: " + e);
+            global.logError("relay-switches: cannot set icon '" + icon + "': " + e);
         }
     }
 
-    /* ------------------------------------------------------------- Applet-API */
+    /* -------------------------------------------------------------- Applet API */
 
     on_applet_clicked(event) {
         this._refreshAll(false);
@@ -664,7 +673,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
         if (this.settings) this.settings.finalize();
     }
 
-    /* Konfiguration für das CLI (relayctl) exportieren */
+    /* Export the configuration for the CLI (relayctl) */
     _exportConfig() {
         try {
             let dir = GLib.get_user_config_dir() + "/cinnamon/spices/" + UUID;
@@ -689,7 +698,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
 
             GLib.file_set_contents(dir + "/switches.json", JSON.stringify(data, null, 2));
         } catch (e) {
-            global.logWarning("Relay Switch: Konfiguration konnte nicht exportiert werden: " + e);
+            global.logWarning("relay-switches: cannot export configuration: " + e);
         }
     }
 }

@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
-"""relayctl - steuert die Relais, die im Cinnamon-Applet "relay-switches@ravel"
-konfiguriert sind - ohne Cinnamon, z. B. aus Nemo-Scripts, Hotkeys oder Cron.
+"""relayctl - switch the relays configured in the Cinnamon applet
+"relay-switches@ravel", without Cinnamon: from scripts, hotkeys or cron.
 
-Die Konfiguration liest das Applet aus:
+The configuration is exported by the applet to
     ~/.config/cinnamon/spices/relay-switches@ravel/switches.json
-(bitte das Applet nach Aenderungen einmal oeffnen, damit exportiert wird)
+(open the applet once after changing switches).
 
-Beispiele:
+Examples:
     relayctl list
     relayctl status
-    relayctl on Kaffeemaschine
+    relayctl on Coffee
     relayctl off Media
-    relayctl toggle Drucker
+    relayctl toggle Printer
     relayctl all-on
     relayctl all-off
 """
 
 import argparse
+import gettext
 import json
 import os
 import re
@@ -29,17 +30,26 @@ CONFIG_PATH = os.path.join(
     "cinnamon", "spices", UUID, "switches.json",
 )
 
-OK = "\033[32m"
-OFF = "\033[90m"
-WARN = "\033[33m"
-BAD = "\033[31m"
-END = "\033[0m"
+gettext.bindtextdomain(
+    UUID,
+    os.path.join(os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")),
+                 "locale"),
+)
+gettext.textdomain(UUID)
+_ = gettext.gettext
+
+COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+OK = "\033[32m" if COLOR else ""
+OFF = "\033[90m" if COLOR else ""
+WARN = "\033[33m" if COLOR else ""
+BAD = "\033[31m" if COLOR else ""
+END = "\033[0m" if COLOR else ""
 
 
-# --------------------------------------------------------------------- Config
+# --------------------------------------------------------------------- Configuration
 
 def split_list(value):
-    """Applet exportiert Listen, handgeschriebene Configs oft "a, b"."""
+    """The applet exports lists, hand-written configs often use "a, b"."""
     if not value:
         return []
     if isinstance(value, str):
@@ -49,11 +59,9 @@ def split_list(value):
 
 def load_config(path):
     if not os.path.exists(path):
-        sys.exit(
-            "Keine Konfiguration gefunden: %s\n"
-            "Bitte das Applet einmal oeffnen (oder Cinnamon neu laden), "
-            "damit die Schalter exportiert werden." % path
-        )
+        sys.exit(_("No configuration found: %s\n"
+                   "Open the applet once (or reload Cinnamon) so that the switches "
+                   "are exported.") % path)
 
     with open(path, "r", encoding="utf-8") as handle:
         data = json.load(handle)
@@ -77,7 +85,7 @@ def load_config(path):
 
 
 def resolve(switches, groups, name):
-    """Name -> Liste von Schaltern (Gruppen werden aufgeloest)."""
+    """Name -> list of switches (groups are expanded)."""
     for switch in switches:
         if switch["name"].lower() == name.lower():
             return [switch]
@@ -89,15 +97,15 @@ def resolve(switches, groups, name):
                 found.extend(resolve(switches, {}, member))
             return found
 
-    # unscharf: Teilstring
-    matches = [s for s in switches if name.lower() in s["name"].lower()]
+    # Partial match, as long as it is unambiguous
+    matches = [switch for switch in switches if name.lower() in switch["name"].lower()]
     if len(matches) == 1:
         return matches
 
     return []
 
 
-# ----------------------------------------------------------------------- HTTP
+# ---------------------------------------------------------------------------- HTTP
 
 def build_url(host, path):
     base = host if "://" in host else "http://" + host
@@ -111,8 +119,17 @@ def http_get(url, timeout):
     try:
         with urllib.request.urlopen(url, timeout=timeout) as response:
             return True, response.read().decode("utf-8", "replace")
-    except Exception as error:  # noqa: BLE001 - Netzwerkfehler sind vielfaeltig
+    except Exception as error:  # noqa: BLE001 - network errors have many causes
         return False, str(error)
+
+
+def text_state(text):
+    value = text.strip().lower()
+    if value in ("1", "on", "true", "yes", "an", "ein"):
+        return True
+    if value in ("0", "off", "false", "no", "aus"):
+        return False
+    return None
 
 
 def parse_state(text):
@@ -143,25 +160,16 @@ def parse_state(text):
     return None
 
 
-def text_state(text):
-    value = text.strip().lower()
-    if value in ("1", "on", "true", "yes", "an", "ein"):
-        return True
-    if value in ("0", "off", "false", "no", "aus"):
-        return False
-    return None
-
-
-# ------------------------------------------------------------------ Aktionen
+# ------------------------------------------------------------------------ Actions
 
 def query(switch, timeout):
-    """True/False/None (None = offline)"""
+    """True / False / None (None = offline)."""
     results = []
     for host in switch["hosts"]:
         ok, body = http_get(build_url(host, switch["status"]), timeout)
         results.append(parse_state(body) if ok else None)
 
-    if not results or any(r is None for r in results):
+    if not results or any(result is None for result in results):
         return None
     return all(results)
 
@@ -170,7 +178,7 @@ def apply(switch, state, timeout):
     path = switch["on"] if state else switch["off"]
     ok = True
     for host in switch["hosts"]:
-        success, _ = http_get(build_url(host, path), timeout)
+        success, _error = http_get(build_url(host, path), timeout)
         ok = ok and success
     return ok
 
@@ -178,26 +186,29 @@ def apply(switch, state, timeout):
 def status_line(switch, timeout):
     state = query(switch, timeout)
     if state is None:
-        return "%s%-20s offline%s" % (BAD, switch["name"], END)
+        return "%s%-20s %s%s" % (BAD, switch["name"], _("offline"), END)
     if state:
-        return "%s%-20s an%s" % (OK, switch["name"], END)
-    return "%s%-20s aus%s" % (OFF, switch["name"], END)
+        return "%s%-20s %s%s" % (OK, switch["name"], _("on"), END)
+    return "%s%-20s %s%s" % (OFF, switch["name"], _("off"), END)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Relais schalten (Konfiguration aus dem Cinnamon-Applet %s)" % UUID)
-    parser.add_argument("-c", "--config", default=CONFIG_PATH, help="Pfad zur switches.json")
-    parser.add_argument("-t", "--timeout", type=float, default=5.0, help="Timeout in Sekunden")
-    parser.add_argument("-q", "--quiet", action="store_true", help="keine Ausgabe")
+        description=_("Switch relays configured in the Cinnamon applet %s") % UUID)
+    parser.add_argument("-c", "--config", default=CONFIG_PATH,
+                        help=_("path to switches.json"))
+    parser.add_argument("-t", "--timeout", type=float, default=5.0,
+                        help=_("timeout in seconds"))
+    parser.add_argument("-q", "--quiet", action="store_true", help=_("no output"))
     parser.add_argument("command", nargs="?", default="status",
-                        choices=["list", "status", "on", "off", "toggle", "all-on", "all-off"])
-    parser.add_argument("target", nargs="?", help="Name des Schalters oder der Gruppe")
+                        choices=["list", "status", "on", "off", "toggle",
+                                 "all-on", "all-off"])
+    parser.add_argument("target", nargs="?", help=_("switch or group name"))
     args = parser.parse_args()
 
     switches, groups = load_config(args.config)
     if not switches:
-        sys.exit("Keine Schalter konfiguriert.")
+        sys.exit(_("No switches configured."))
 
     def say(message):
         if not args.quiet:
@@ -207,40 +218,39 @@ def main():
         for switch in switches:
             say("%-20s %s" % (switch["name"], ", ".join(switch["hosts"])))
         for group, members in groups.items():
-            say("%-20s Gruppe: %s" % (group, ", ".join(members)))
+            say("%-20s %s: %s" % (group, _("group"), ", ".join(members)))
         return 0
 
     if args.command == "status":
         for switch in switches:
             say(status_line(switch, args.timeout))
         for group, members in groups.items():
-            say("%-20s Gruppe (%s)" % (group, ", ".join(members)))
+            say("%-20s %s (%s)" % (group, _("group"), ", ".join(members)))
         return 0
 
     if args.command in ("all-on", "all-off"):
         wanted = args.command == "all-on"
         failed = 0
         for switch in switches:
-            if not apply(switch, wanted, args.timeout):
-                failed += 1
-                say("%s%s: nicht erreichbar%s" % (WARN, switch["name"], END))
-            else:
+            if apply(switch, wanted, args.timeout):
                 say("%s%s: %s%s" % (OK if wanted else OFF, switch["name"],
-                                    "an" if wanted else "aus", END))
+                                    _("on") if wanted else _("off"), END))
+            else:
+                failed += 1
+                say("%s%s: %s%s" % (WARN, switch["name"], _("unreachable"), END))
         return 1 if failed else 0
 
     if not args.target:
-        sys.exit("Bitte einen Schalter- oder Gruppennamen angeben (siehe 'relayctl list').")
+        sys.exit(_("Please name a switch or group (see 'relayctl list')."))
 
     targets = resolve(switches, groups, args.target)
     if not targets:
-        sys.exit("Unbekannter Schalter: %s" % args.target)
+        sys.exit(_("Unknown switch: %s") % args.target)
 
     failed = 0
     for switch in targets:
         if args.command == "toggle":
-            current = query(switch, args.timeout)
-            wanted = not bool(current)
+            wanted = not bool(query(switch, args.timeout))
         elif args.command == "on":
             wanted = True
         else:
@@ -248,10 +258,10 @@ def main():
 
         if apply(switch, wanted, args.timeout):
             say("%s%s: %s%s" % (OK if wanted else OFF, switch["name"],
-                                "an" if wanted else "aus", END))
+                                _("on") if wanted else _("off"), END))
         else:
             failed += 1
-            say("%s%s: nicht erreichbar%s" % (WARN, switch["name"], END))
+            say("%s%s: %s%s" % (WARN, switch["name"], _("unreachable"), END))
 
     return 1 if failed else 0
 

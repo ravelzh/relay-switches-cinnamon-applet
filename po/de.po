@@ -1,0 +1,250 @@
+# German translation of the Cinnamon applet "relay-switches@ravel".
+# This file is distributed under the same license as the applet.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: relay-switches@ravel 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-10-29 23:20+0100\n"
+"Last-Translator: ravel\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. metadata.json
+msgid ""
+"Switch HTTP relay boards (sockets, coffee machine, printer, ...) from the "
+"panel. Any number of switches and groups, status read back from the board."
+msgstr ""
+"Schaltet HTTP-Relaisboards (Steckdosen, Kaffeemaschine, Drucker, ...) direkt "
+"aus der Leiste. Beliebig viele Schalter und Gruppen, Status wird vom Board "
+"zurückgelesen."
+
+#. applet.js
+msgid "Switch %d"
+msgstr "Schalter %d"
+
+msgid "Group %d"
+msgstr "Gruppe %d"
+
+msgid "All on"
+msgstr "Alle einschalten"
+
+msgid "All off"
+msgstr "Alle ausschalten"
+
+msgid "Refresh status"
+msgstr "Status aktualisieren"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Relays"
+msgstr "Relais"
+
+msgid "%d of %d on"
+msgstr "%d von %d an"
+
+#, javascript-format
+msgid "%d device offline"
+msgid_plural "%d devices offline"
+msgstr[0] "%d Gerät offline"
+msgstr[1] "%d Geräte offline"
+
+msgid "Relay control"
+msgstr "Relais-Steuerung"
+
+msgid "Relay unreachable"
+msgstr "Relais nicht erreichbar"
+
+#, javascript-format
+msgid "%s: %d of %d devices did not respond."
+msgstr "%s: %d von %d Geräten antworten nicht."
+
+msgid "on"
+msgstr "an"
+
+msgid "off"
+msgstr "aus"
+
+msgid "unknown"
+msgstr "unbekannt"
+
+msgid "offline"
+msgstr "offline"
+
+#. settings-schema.json
+msgid "Switches"
+msgstr "Schalter"
+
+msgid "Panel"
+msgstr "Leiste"
+
+msgid "Behavior"
+msgstr "Verhalten"
+
+msgid "How it works"
+msgstr "So funktioniert's"
+
+msgid "Relays / sockets"
+msgstr "Relais / Steckdosen"
+
+msgid "Groups"
+msgstr "Gruppen"
+
+msgid "Panel appearance"
+msgstr "Aussehen in der Leiste"
+
+msgid "Middle mouse button"
+msgstr "Mittlere Maustaste"
+
+msgid "Status display"
+msgstr "Statusanzeige"
+
+msgid "Network"
+msgstr "Netzwerk"
+
+msgid ""
+"One row per switch in the menu. Several hosts (comma separated) are switched "
+"together; the status is read back from the board after every action."
+msgstr ""
+"Eine Zeile = ein Schalter im Menü. Mehrere Hosts (Komma) werden gemeinsam "
+"geschaltet; der Status wird nach jeder Aktion vom Board gelesen."
+
+msgid ""
+"Order of the rows is the order in the menu, names must be unique.\n"
+"Host(s): 192.168.1.50 or http://board.local:8080 - separate several with "
+"commas.\n"
+"On/Off/Status are paths appended to the host; leave empty for the defaults "
+"(/relay?state=1, /relay?state=0, /relay)."
+msgstr ""
+"Reihenfolge = Reihenfolge im Menü, Namen müssen eindeutig sein.\n"
+"Host(s): 192.168.1.50 oder http://board.local:8080 - mehrere mit Komma "
+"trennen.\n"
+"Ein/Aus/Status sind Pfade, die an den Host angehängt werden; leer = Standard "
+"(/relay?state=1, /relay?state=0, /relay)."
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Icon"
+msgstr "Symbol"
+
+msgid "Host(s)"
+msgstr "Host(s)"
+
+msgid "On"
+msgstr "Ein"
+
+msgid "Off"
+msgstr "Aus"
+
+msgid "Status"
+msgstr "Status"
+
+msgid ""
+"Optional: combine several switches into one additional switch. Member names "
+"must match the switch list exactly, separated by commas."
+msgstr ""
+"Optional: mehrere Schalter zu einem zusätzlichen Schalter bündeln. Namen "
+"exakt wie in der Schalter-Liste, mit Komma getrennt."
+
+msgid "Text next to the icon"
+msgstr "Text neben dem Symbol"
+
+msgid "The text only appears while at least one switch is on."
+msgstr "Der Text erscheint nur, wenn mindestens ein Schalter an ist."
+
+msgid "Nothing"
+msgstr "Nichts"
+
+msgid "Count (2/4)"
+msgstr "Anzahl (2/4)"
+
+msgid "Names of the active switches"
+msgstr "Namen der aktiven Schalter"
+
+msgid "Icon name (e.g. network-server-symbolic) or a file. Symbolic icons follow the panel color."
+msgstr ""
+"Symbolname (z. B. network-server-symbolic) oder eine Datei. Symbolische "
+"Symbole übernehmen die Farbe der Leiste."
+
+msgid "Icon while something is on"
+msgstr "Symbol, wenn etwas an ist"
+
+msgid "Leave empty to keep the same icon. A colored icon makes the active state visible at a glance."
+msgstr ""
+"Leer lassen für dasselbe Symbol. Ein farbiges Symbol macht den Zustand auf "
+"einen Blick sichtbar."
+
+msgid "Action on middle click"
+msgstr "Aktion bei Mittelklick"
+
+msgid "Switch everything on"
+msgstr "Alle einschalten"
+
+msgid "Switch everything off"
+msgstr "Alle ausschalten"
+
+msgid "Open menu"
+msgstr "Menü öffnen"
+
+msgid "Status check interval"
+msgstr "Status-Abfrageintervall"
+
+msgid "0 = no automatic polling (status is read when the menu opens)."
+msgstr "0 = keine automatische Abfrage (Status wird beim Öffnen des Menüs gelesen)."
+
+msgid "seconds"
+msgstr "Sekunden"
+
+msgid "Notify when a device does not respond"
+msgstr "Benachrichtigung, wenn ein Gerät nicht antwortet"
+
+msgid "Show 'All on' / 'All off' in the menu"
+msgstr "'Alle einschalten' / 'Alle ausschalten' im Menü anzeigen"
+
+msgid "HTTP timeout"
+msgstr "HTTP-Zeitlimit"
+
+#. relayctl
+msgid ""
+"No configuration found: %s\n"
+"Open the applet once (or reload Cinnamon) so that the switches are exported."
+msgstr ""
+"Keine Konfiguration gefunden: %s\n"
+"Bitte das Applet einmal öffnen (oder Cinnamon neu laden), damit die Schalter "
+"exportiert werden."
+
+msgid "No switches configured."
+msgstr "Keine Schalter konfiguriert."
+
+msgid "group"
+msgstr "Gruppe"
+
+msgid "unreachable"
+msgstr "nicht erreichbar"
+
+msgid "Please name a switch or group (see 'relayctl list')."
+msgstr "Bitte einen Schalter- oder Gruppennamen angeben (siehe 'relayctl list')."
+
+msgid "Unknown switch: %s"
+msgstr "Unbekannter Schalter: %s"
+
+msgid "Switch relays configured in the Cinnamon applet %s"
+msgstr "Relais schalten, die im Cinnamon-Applet %s konfiguriert sind"
+
+msgid "path to switches.json"
+msgstr "Pfad zur switches.json"
+
+msgid "timeout in seconds"
+msgstr "Zeitlimit in Sekunden"
+
+msgid "no output"
+msgstr "keine Ausgabe"
+
+msgid "switch or group name"
+msgstr "Name des Schalters oder der Gruppe"
