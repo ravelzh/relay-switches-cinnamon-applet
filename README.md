@@ -73,7 +73,8 @@ sudo install -o USER -g USER -m 644 \
 ```
 
 The settings file is copied as it is; Cinnamon keeps the values and adapts the
-file to the installed schema the first time the applet starts.
+file to the installed schema the first time the applet starts. Add the applet in
+that user's running session: right-click the panel → **Applets**.
 
 ## Configuration
 

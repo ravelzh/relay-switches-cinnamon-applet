@@ -76,7 +76,9 @@ sudo install -o USER -g USER -m 644 \
 ```
 
 Die Einstellungsdatei wird unverändert kopiert; Cinnamon behält die Werte und
-passt die Datei beim ersten Start des Applets an das installierte Schema an.
+passt die Datei beim ersten Start des Applets an das installierte Schema an. In
+der laufenden Sitzung des Benutzers das Applet noch hinzufügen: Rechtsklick auf
+die Leiste → **Applets**.
 
 ## Konfiguration
 
