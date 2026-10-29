@@ -24,32 +24,59 @@ Schaltern und liest den echten Zustand vom Board zurück.
 
 Die Oberfläche gibt es auf Deutsch und Englisch. Englisch ist die
 Quellsprache, Deutsch kommt aus `po/de.po`; die Sprache folgt der
-Desktop-Locale, im Applet gibt es keinen Umschalter. `install.sh` kompiliert die
-Übersetzung nach `~/.local/share/locale`, im Repository liegen keine erzeugten
-Dateien.
+Desktop-Locale, im Applet gibt es keinen Umschalter. Die Übersetzungen werden
+bei der Installation nach `~/.local/share/locale` kompiliert, im Repository
+liegen keine erzeugten Dateien.
 
 Für eine weitere Sprache `po/de.po` nach `po/<sprache>.po` kopieren, die
-`msgstr`-Werte übersetzen und `install.sh` erneut ausführen (`xgettext`/`msgmerge`
-erzeugen die String-Liste nach Änderungen neu).
+`msgstr`-Werte übersetzen und die `msgfmt`-Schleife aus der Installation erneut
+ausführen (`xgettext`/`msgmerge` erzeugen die String-Liste nach Änderungen neu).
 
 ## Installation
 
 ```bash
 git clone git@gitlab.maeli.net:ravel/cinnamon-applets.git
 cd cinnamon-applets/relay-switches@ravel
-./install.sh --panel --cli --reload
+
+# Applet-Dateien
+install -d ~/.local/share/cinnamon/applets/relay-switches@ravel
+install -m 644 metadata.json applet.js settings-schema.json icon.png \
+        ~/.local/share/cinnamon/applets/relay-switches@ravel/
+
+# Übersetzungen (braucht gettext)
+for po in po/*.po; do
+    lang="$(basename "$po" .po)"
+    install -d "$HOME/.local/share/locale/$lang/LC_MESSAGES"
+    msgfmt -o "$HOME/.local/share/locale/$lang/LC_MESSAGES/relay-switches@ravel.mo" "$po"
+done
+
+# optional: CLI
+install -Dm 755 relayctl ~/.local/bin/relayctl
 ```
 
-Ohne `--panel` das Applet über Rechtsklick auf die Leiste → **Applets**
-hinzufügen. `--cli` installiert `relayctl` nach `~/.local/bin`, `--reload` lädt
-Cinnamon neu.
-
-Für einen anderen Benutzer auf demselben Rechner (inklusive eigener
-Einstellungen und Leisten-Eintrag):
+Cinnamon neu laden, danach Rechtsklick auf die Leiste → **Applets** →
+**Relay Switches**:
 
 ```bash
-sudo ./install.sh --for BENUTZER --panel --cli --settings
+dbus-send --session --dest org.Cinnamon --object-path /org/Cinnamon \
+  --type=method_call org.Cinnamon.Eval string:'global.reexec_self()'
 ```
+
+Für einen anderen Benutzer auf demselben Rechner, inklusive der eigenen
+Schalter:
+
+```bash
+sudo install -d -o USER -g USER ~USER/.local/share/cinnamon/applets/relay-switches@ravel \
+    ~USER/.config/cinnamon/spices/relay-switches@ravel
+sudo install -o USER -g USER -m 644 metadata.json applet.js settings-schema.json icon.png \
+    ~USER/.local/share/cinnamon/applets/relay-switches@ravel/
+sudo install -o USER -g USER -m 644 \
+    ~/.config/cinnamon/spices/relay-switches@ravel/relay-switches@ravel.json \
+    ~USER/.config/cinnamon/spices/relay-switches@ravel/
+```
+
+Die Einstellungsdatei wird unverändert kopiert; Cinnamon behält die Werte und
+passt die Datei beim ersten Start des Applets an das installierte Schema an.
 
 ## Konfiguration
 
@@ -107,8 +134,8 @@ erreichbar war.
 ```bash
 rm -rf ~/.local/share/cinnamon/applets/relay-switches@ravel \
        ~/.config/cinnamon/spices/relay-switches@ravel \
-       ~/.local/share/locale/*/LC_MESSAGES/relay-switches@ravel.mo \
-       ~/.local/bin/relayctl
+       ~/.local/share/locale/*/LC_MESSAGES/relay-switches@ravel.mo
+rm -f  ~/.local/bin/relayctl            # nur wenn die CLI installiert wurde
 ```
 
 ## Hinweise
