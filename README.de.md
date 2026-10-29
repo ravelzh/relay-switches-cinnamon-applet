@@ -34,8 +34,8 @@ ausführen (`xgettext`/`msgmerge` erzeugen die String-Liste nach Änderungen neu
 ## Installation
 
 ```bash
-git clone git@gitlab.maeli.net:ravel/cinnamon-applets.git
-cd cinnamon-applets/relay-switches@ravel
+git clone https://github.com/ravelzh/ravel-cyber-pulse-cinnamon-relay-switches.git
+cd ravel-cyber-pulse-cinnamon-relay-switches
 
 # Applet-Dateien
 install -d ~/.local/share/cinnamon/applets/relay-switches@ravel

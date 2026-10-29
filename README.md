@@ -33,8 +33,8 @@ To add a language, copy `po/de.po` to `po/<language>.po`, translate the
 ## Installation
 
 ```bash
-git clone git@gitlab.maeli.net:ravel/cinnamon-applets.git
-cd cinnamon-applets/relay-switches@ravel
+git clone https://github.com/ravelzh/ravel-cyber-pulse-cinnamon-relay-switches.git
+cd ravel-cyber-pulse-cinnamon-relay-switches
 
 # applet files
 install -d ~/.local/share/cinnamon/applets/relay-switches@ravel
