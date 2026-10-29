@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect x="5" y="5" width="246" height="246" rx="54" fill="#0B0904"/>
+  <rect x="5" y="5" width="246" height="246" rx="54" fill="none"
+        stroke="#FFB020" stroke-opacity="0.65" stroke-width="2"/>
+
+  <!-- Switch 1: an -->
+  <rect x="48" y="58" width="160" height="34" rx="17" fill="#FFB020"/>
+  <circle cx="191" cy="75" r="12" fill="#0B0904"/>
+
+  <!-- Switch 2: an -->
+  <rect x="48" y="111" width="160" height="34" rx="17" fill="#FFB020"/>
+  <circle cx="191" cy="128" r="12" fill="#0B0904"/>
+
+  <!-- Switch 3: aus -->
+  <rect x="48" y="164" width="160" height="34" rx="17" fill="none"
+        stroke="#8A6A2A" stroke-width="3"/>
+  <circle cx="65" cy="181" r="12" fill="#8A6A2A"/>
+</svg>

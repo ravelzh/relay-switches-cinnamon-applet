@@ -1,0 +1,260 @@
+#!/usr/bin/env python3
+"""relayctl - steuert die Relais, die im Cinnamon-Applet "relay-switches@ravel"
+konfiguriert sind - ohne Cinnamon, z. B. aus Nemo-Scripts, Hotkeys oder Cron.
+
+Die Konfiguration liest das Applet aus:
+    ~/.config/cinnamon/spices/relay-switches@ravel/switches.json
+(bitte das Applet nach Aenderungen einmal oeffnen, damit exportiert wird)
+
+Beispiele:
+    relayctl list
+    relayctl status
+    relayctl on Kaffeemaschine
+    relayctl off Media
+    relayctl toggle Drucker
+    relayctl all-on
+    relayctl all-off
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+import urllib.request
+
+UUID = "relay-switches@ravel"
+CONFIG_PATH = os.path.join(
+    os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
+    "cinnamon", "spices", UUID, "switches.json",
+)
+
+OK = "\033[32m"
+OFF = "\033[90m"
+WARN = "\033[33m"
+BAD = "\033[31m"
+END = "\033[0m"
+
+
+# --------------------------------------------------------------------- Config
+
+def split_list(value):
+    """Applet exportiert Listen, handgeschriebene Configs oft "a, b"."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [part.strip() for part in re.split(r"[,;]", value) if part.strip()]
+    return [str(part).strip() for part in value if str(part).strip()]
+
+
+def load_config(path):
+    if not os.path.exists(path):
+        sys.exit(
+            "Keine Konfiguration gefunden: %s\n"
+            "Bitte das Applet einmal oeffnen (oder Cinnamon neu laden), "
+            "damit die Schalter exportiert werden." % path
+        )
+
+    with open(path, "r", encoding="utf-8") as handle:
+        data = json.load(handle)
+
+    switches = []
+    for row in data.get("switches", []):
+        switches.append({
+            "name": row.get("name", "?"),
+            "hosts": split_list(row.get("hosts")),
+            "on": row.get("on_path") or "/relay?state=1",
+            "off": row.get("off_path") or "/relay?state=0",
+            "status": row.get("status_path") or "/relay",
+        })
+
+    groups = {
+        row.get("name", "?"): split_list(row.get("members"))
+        for row in data.get("groups", [])
+    }
+
+    return switches, groups
+
+
+def resolve(switches, groups, name):
+    """Name -> Liste von Schaltern (Gruppen werden aufgeloest)."""
+    for switch in switches:
+        if switch["name"].lower() == name.lower():
+            return [switch]
+
+    for group, members in groups.items():
+        if group.lower() == name.lower():
+            found = []
+            for member in members:
+                found.extend(resolve(switches, {}, member))
+            return found
+
+    # unscharf: Teilstring
+    matches = [s for s in switches if name.lower() in s["name"].lower()]
+    if len(matches) == 1:
+        return matches
+
+    return []
+
+
+# ----------------------------------------------------------------------- HTTP
+
+def build_url(host, path):
+    base = host if "://" in host else "http://" + host
+    base = base.rstrip("/")
+    if not path:
+        return base
+    return base + (path if path.startswith("/") else "/" + path)
+
+
+def http_get(url, timeout):
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as response:
+            return True, response.read().decode("utf-8", "replace")
+    except Exception as error:  # noqa: BLE001 - Netzwerkfehler sind vielfaeltig
+        return False, str(error)
+
+
+def parse_state(text):
+    text = (text or "").strip()
+    if not text:
+        return None
+
+    try:
+        data = json.loads(text)
+    except ValueError:
+        return text_state(text)
+
+    if isinstance(data, bool):
+        return data
+    if isinstance(data, (int, float)):
+        return bool(data)
+    if isinstance(data, dict):
+        for key in ("on", "state", "relay", "power", "status"):
+            if key not in data:
+                continue
+            value = data[key]
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, (int, float)):
+                return bool(value)
+            if isinstance(value, str):
+                return text_state(value)
+    return None
+
+
+def text_state(text):
+    value = text.strip().lower()
+    if value in ("1", "on", "true", "yes", "an", "ein"):
+        return True
+    if value in ("0", "off", "false", "no", "aus"):
+        return False
+    return None
+
+
+# ------------------------------------------------------------------ Aktionen
+
+def query(switch, timeout):
+    """True/False/None (None = offline)"""
+    results = []
+    for host in switch["hosts"]:
+        ok, body = http_get(build_url(host, switch["status"]), timeout)
+        results.append(parse_state(body) if ok else None)
+
+    if not results or any(r is None for r in results):
+        return None
+    return all(results)
+
+
+def apply(switch, state, timeout):
+    path = switch["on"] if state else switch["off"]
+    ok = True
+    for host in switch["hosts"]:
+        success, _ = http_get(build_url(host, path), timeout)
+        ok = ok and success
+    return ok
+
+
+def status_line(switch, timeout):
+    state = query(switch, timeout)
+    if state is None:
+        return "%s%-20s offline%s" % (BAD, switch["name"], END)
+    if state:
+        return "%s%-20s an%s" % (OK, switch["name"], END)
+    return "%s%-20s aus%s" % (OFF, switch["name"], END)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Relais schalten (Konfiguration aus dem Cinnamon-Applet %s)" % UUID)
+    parser.add_argument("-c", "--config", default=CONFIG_PATH, help="Pfad zur switches.json")
+    parser.add_argument("-t", "--timeout", type=float, default=5.0, help="Timeout in Sekunden")
+    parser.add_argument("-q", "--quiet", action="store_true", help="keine Ausgabe")
+    parser.add_argument("command", nargs="?", default="status",
+                        choices=["list", "status", "on", "off", "toggle", "all-on", "all-off"])
+    parser.add_argument("target", nargs="?", help="Name des Schalters oder der Gruppe")
+    args = parser.parse_args()
+
+    switches, groups = load_config(args.config)
+    if not switches:
+        sys.exit("Keine Schalter konfiguriert.")
+
+    def say(message):
+        if not args.quiet:
+            print(message)
+
+    if args.command == "list":
+        for switch in switches:
+            say("%-20s %s" % (switch["name"], ", ".join(switch["hosts"])))
+        for group, members in groups.items():
+            say("%-20s Gruppe: %s" % (group, ", ".join(members)))
+        return 0
+
+    if args.command == "status":
+        for switch in switches:
+            say(status_line(switch, args.timeout))
+        for group, members in groups.items():
+            say("%-20s Gruppe (%s)" % (group, ", ".join(members)))
+        return 0
+
+    if args.command in ("all-on", "all-off"):
+        wanted = args.command == "all-on"
+        failed = 0
+        for switch in switches:
+            if not apply(switch, wanted, args.timeout):
+                failed += 1
+                say("%s%s: nicht erreichbar%s" % (WARN, switch["name"], END))
+            else:
+                say("%s%s: %s%s" % (OK if wanted else OFF, switch["name"],
+                                    "an" if wanted else "aus", END))
+        return 1 if failed else 0
+
+    if not args.target:
+        sys.exit("Bitte einen Schalter- oder Gruppennamen angeben (siehe 'relayctl list').")
+
+    targets = resolve(switches, groups, args.target)
+    if not targets:
+        sys.exit("Unbekannter Schalter: %s" % args.target)
+
+    failed = 0
+    for switch in targets:
+        if args.command == "toggle":
+            current = query(switch, args.timeout)
+            wanted = not bool(current)
+        elif args.command == "on":
+            wanted = True
+        else:
+            wanted = False
+
+        if apply(switch, wanted, args.timeout):
+            say("%s%s: %s%s" % (OK if wanted else OFF, switch["name"],
+                                "an" if wanted else "aus", END))
+        else:
+            failed += 1
+            say("%s%s: nicht erreichbar%s" % (WARN, switch["name"], END))
+
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
