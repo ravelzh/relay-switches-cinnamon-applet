@@ -6,7 +6,7 @@ Applet für die Leiste, das HTTP-Relaisboards schaltet (Steckdosen,
 Kaffeemaschine, Drucker, …). Ein Klick öffnet ein Menü mit den konfigurierten
 Schaltern und liest den echten Zustand vom Board zurück.
 
-![Menü](docs/screenshot.png)
+![Menü](screenshot.png)
 
 ## Funktionen
 
@@ -32,6 +32,11 @@ Für eine weitere Sprache `po/de.po` nach `po/<sprache>.po` kopieren, die
 ausführen (`xgettext`/`msgmerge` erzeugen die String-Liste nach Änderungen neu).
 
 ## Installation
+
+In Cinnamon: **Systemeinstellungen → Applets → Herunterladen** → *Relay
+Switches*, danach im Tab **Verwalten** hinzufügen.
+
+Aus dem Quellcode (die Applet-Dateien liegen im Wurzelverzeichnis des Repositorys):
 
 ```bash
 git clone https://github.com/ravelzh/ravel-cyber-pulse-cinnamon-relay-switches.git
@@ -86,7 +91,7 @@ Mehrere Hosts werden mit Komma getrennt, erlaubt sind IP-Adressen oder URLs
 (`http://board.local:8080`). Gruppen sind Zeilen auf derselben Seite und
 verweisen auf Schalternamen, z. B. *Media* = `TV, Verstärker`.
 
-![Einstellungen](docs/settings.png)
+![Einstellungen](settings.png)
 
 ## Status-Format
 
@@ -118,6 +123,14 @@ Namen werden zuerst exakt, dann als eindeutiger Teilstring gesucht.
 Gruppennamen werden auf ihre Mitglieder aufgelöst. Rückgabewert ist `1`, wenn
 ein Gerät nicht erreichbar war.
 
+Wurde das Applet aus dem Store installiert, liegt `relayctl` im Applet-Verzeichnis
+und braucht das Ausführungsrecht:
+
+```bash
+chmod +x ~/.local/share/cinnamon/applets/relay-switches@ravel/relayctl
+~/.local/share/cinnamon/applets/relay-switches@ravel/relayctl status
+```
+
 ## Deinstallation
 
 ```bash
@@ -133,3 +146,7 @@ rm -f ~/.local/bin/relayctl            # nur wenn die CLI installiert wurde
 - HTTP-Anfragen laufen über `curl` (asynchron, ohne Shell).
 - Symbolische Symbolnamen enden auf `-symbolic` und folgen der Leistenfarbe.
 - Nach Änderungen an den Applet-Dateien Cinnamon neu laden (Alt+F2, `r`, Enter).
+
+## Lizenz
+
+GPL-3.0

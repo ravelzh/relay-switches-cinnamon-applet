@@ -6,7 +6,7 @@ Panel applet for HTTP relay boards (smart sockets, coffee machine, printer, …)
 One click opens a menu that switches the configured relays and reads the real
 state back from the board.
 
-![Menu](docs/screenshot.png)
+![Menu](screenshot.png)
 
 ## Features
 
@@ -31,6 +31,11 @@ To add a language, copy `po/de.po` to `po/<language>.po`, translate the
 (`xgettext`/`msgmerge` regenerate the string list after changes).
 
 ## Installation
+
+In Cinnamon: **System Settings → Applets → Download** → *Relay Switches*, then
+add it from the **Manage** tab.
+
+From source (the applet files are in the root of this repository):
 
 ```bash
 git clone https://github.com/ravelzh/ravel-cyber-pulse-cinnamon-relay-switches.git
@@ -84,7 +89,7 @@ Hosts are separated by commas and may be IP addresses or URLs
 (`http://board.local:8080`). Groups are rows on the same page and refer to
 switch names, e.g. *Media* = `TV, Amplifier`.
 
-![Settings](docs/settings.png)
+![Settings](settings.png)
 
 ## Status format
 
@@ -115,6 +120,14 @@ relayctl all-off
 Names are matched exactly first, then as an unambiguous substring. Group names
 expand to their members. The exit code is `1` if a device could not be reached.
 
+When the applet was installed from the store, `relayctl` sits inside the applet
+directory and needs the execute bit:
+
+```bash
+chmod +x ~/.local/share/cinnamon/applets/relay-switches@ravel/relayctl
+~/.local/share/cinnamon/applets/relay-switches@ravel/relayctl status
+```
+
 ## Removal
 
 ```bash
@@ -130,3 +143,7 @@ rm -f ~/.local/bin/relayctl            # only if the CLI was installed
 - HTTP requests use `curl` (asynchronous, without a shell).
 - Symbolic icon names end in `-symbolic` and follow the panel color.
 - After changing the applet files, reload Cinnamon (Alt+F2, `r`, Enter).
+
+## License
+
+GPL-3.0

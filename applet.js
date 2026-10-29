@@ -24,7 +24,7 @@ const Gettext = imports.gettext;
 
 const UUID = "relay-switches@ravel";
 
-Gettext.bindtextdomain(UUID, GLib.get_home_dir() + "/.local/share/locale");
+Gettext.bindtextdomain(UUID, GLib.get_user_data_dir() + "/locale");
 
 function _(text) {
     return Gettext.dgettext(UUID, text);
@@ -387,7 +387,7 @@ class RelaySwitchesApplet extends Applet.TextIconApplet {
             if (typeof this.configureApplet === "function") {
                 this.configureApplet();
             } else {
-                Util.spawnCommandLine("cinnamon-settings applets " + UUID);
+                Util.spawn(["cinnamon-settings", "applets", UUID]);
             }
         });
         this.menu.addMenuItem(configItem);

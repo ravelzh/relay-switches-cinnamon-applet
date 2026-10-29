@@ -17,7 +17,6 @@ Examples:
 """
 
 import argparse
-import gettext
 import json
 import os
 import re
@@ -29,14 +28,6 @@ CONFIG_PATH = os.path.join(
     os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
     "cinnamon", "spices", UUID, "switches.json",
 )
-
-gettext.bindtextdomain(
-    UUID,
-    os.path.join(os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")),
-                 "locale"),
-)
-gettext.textdomain(UUID)
-_ = gettext.gettext
 
 COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
 OK = "\033[32m" if COLOR else ""
@@ -59,9 +50,9 @@ def split_list(value):
 
 def load_config(path):
     if not os.path.exists(path):
-        sys.exit(_("No configuration found: %s\n"
-                   "Open the applet once (or reload Cinnamon) so that the switches "
-                   "are exported.") % path)
+        sys.exit("No configuration found: %s\n"
+                 "Open the applet once (or reload Cinnamon) so that the switches "
+                 "are exported." % path)
 
     with open(path, "r", encoding="utf-8") as handle:
         data = json.load(handle)
@@ -186,29 +177,29 @@ def apply(switch, state, timeout):
 def status_line(switch, timeout):
     state = query(switch, timeout)
     if state is None:
-        return "%s%-20s %s%s" % (BAD, switch["name"], _("offline"), END)
+        return "%s%-20s %s%s" % (BAD, switch["name"], "offline", END)
     if state:
-        return "%s%-20s %s%s" % (OK, switch["name"], _("on"), END)
-    return "%s%-20s %s%s" % (OFF, switch["name"], _("off"), END)
+        return "%s%-20s %s%s" % (OK, switch["name"], "on", END)
+    return "%s%-20s %s%s" % (OFF, switch["name"], "off", END)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description=_("Switch relays configured in the Cinnamon applet %s") % UUID)
+        description="Switch relays configured in the Cinnamon applet %s" % UUID)
     parser.add_argument("-c", "--config", default=CONFIG_PATH,
-                        help=_("path to switches.json"))
+                        help="path to switches.json")
     parser.add_argument("-t", "--timeout", type=float, default=5.0,
-                        help=_("timeout in seconds"))
-    parser.add_argument("-q", "--quiet", action="store_true", help=_("no output"))
+                        help="timeout in seconds")
+    parser.add_argument("-q", "--quiet", action="store_true", help="no output")
     parser.add_argument("command", nargs="?", default="status",
                         choices=["list", "status", "on", "off", "toggle",
                                  "all-on", "all-off"])
-    parser.add_argument("target", nargs="?", help=_("switch or group name"))
+    parser.add_argument("target", nargs="?", help="switch or group name")
     args = parser.parse_args()
 
     switches, groups = load_config(args.config)
     if not switches:
-        sys.exit(_("No switches configured."))
+        sys.exit("No switches configured.")
 
     def say(message):
         if not args.quiet:
@@ -218,14 +209,14 @@ def main():
         for switch in switches:
             say("%-20s %s" % (switch["name"], ", ".join(switch["hosts"])))
         for group, members in groups.items():
-            say("%-20s %s: %s" % (group, _("group"), ", ".join(members)))
+            say("%-20s %s: %s" % (group, "group", ", ".join(members)))
         return 0
 
     if args.command == "status":
         for switch in switches:
             say(status_line(switch, args.timeout))
         for group, members in groups.items():
-            say("%-20s %s (%s)" % (group, _("group"), ", ".join(members)))
+            say("%-20s %s (%s)" % (group, "group", ", ".join(members)))
         return 0
 
     if args.command in ("all-on", "all-off"):
@@ -234,18 +225,18 @@ def main():
         for switch in switches:
             if apply(switch, wanted, args.timeout):
                 say("%s%s: %s%s" % (OK if wanted else OFF, switch["name"],
-                                    _("on") if wanted else _("off"), END))
+                                    "on" if wanted else "off", END))
             else:
                 failed += 1
-                say("%s%s: %s%s" % (WARN, switch["name"], _("unreachable"), END))
+                say("%s%s: %s%s" % (WARN, switch["name"], "unreachable", END))
         return 1 if failed else 0
 
     if not args.target:
-        sys.exit(_("Please name a switch or group (see 'relayctl list')."))
+        sys.exit("Please name a switch or group (see 'relayctl list').")
 
     targets = resolve(switches, groups, args.target)
     if not targets:
-        sys.exit(_("Unknown switch: %s") % args.target)
+        sys.exit("Unknown switch: %s" % args.target)
 
     failed = 0
     for switch in targets:
@@ -258,10 +249,10 @@ def main():
 
         if apply(switch, wanted, args.timeout):
             say("%s%s: %s%s" % (OK if wanted else OFF, switch["name"],
-                                _("on") if wanted else _("off"), END))
+                                "on" if wanted else "off", END))
         else:
             failed += 1
-            say("%s%s: %s%s" % (WARN, switch["name"], _("unreachable"), END))
+            say("%s%s: %s%s" % (WARN, switch["name"], "unreachable", END))
 
     return 1 if failed else 0
 
