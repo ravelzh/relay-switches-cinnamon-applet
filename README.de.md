@@ -62,24 +62,6 @@ dbus-send --session --dest org.Cinnamon --object-path /org/Cinnamon \
   --type=method_call org.Cinnamon.Eval string:'global.reexec_self()'
 ```
 
-Für einen anderen Benutzer auf demselben Rechner, inklusive der eigenen
-Schalter:
-
-```bash
-sudo install -d -o USER -g USER ~USER/.local/share/cinnamon/applets/relay-switches@ravel \
-    ~USER/.config/cinnamon/spices/relay-switches@ravel
-sudo install -o USER -g USER -m 644 metadata.json applet.js settings-schema.json icon.png \
-    ~USER/.local/share/cinnamon/applets/relay-switches@ravel/
-sudo install -o USER -g USER -m 644 \
-    ~/.config/cinnamon/spices/relay-switches@ravel/relay-switches@ravel.json \
-    ~USER/.config/cinnamon/spices/relay-switches@ravel/
-```
-
-Die Einstellungsdatei wird unverändert kopiert; Cinnamon behält die Werte und
-passt die Datei beim ersten Start des Applets an das installierte Schema an. In
-der laufenden Sitzung des Benutzers das Applet noch hinzufügen: Rechtsklick auf
-die Leiste → **Applets**.
-
 ## Konfiguration
 
 Rechtsklick auf das Applet → **Konfigurieren**.
