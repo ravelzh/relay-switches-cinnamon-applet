@@ -38,8 +38,8 @@ add it from the **Manage** tab.
 From source (the applet files are in the root of this repository):
 
 ```bash
-git clone https://github.com/ravelzh/ravel-cyber-pulse-cinnamon-relay-switches.git
-cd ravel-cyber-pulse-cinnamon-relay-switches
+git clone https://github.com/ravelzh/relay-switches-cinnamon-applet.git
+cd relay-switches-cinnamon-applet
 
 # applet files
 install -d ~/.local/share/cinnamon/applets/relay-switches@ravel

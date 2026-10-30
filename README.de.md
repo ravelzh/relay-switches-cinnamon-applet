@@ -39,8 +39,8 @@ Switches*, danach im Tab **Verwalten** hinzufügen.
 Aus dem Quellcode (die Applet-Dateien liegen im Wurzelverzeichnis des Repositorys):
 
 ```bash
-git clone https://github.com/ravelzh/ravel-cyber-pulse-cinnamon-relay-switches.git
-cd ravel-cyber-pulse-cinnamon-relay-switches
+git clone https://github.com/ravelzh/relay-switches-cinnamon-applet.git
+cd relay-switches-cinnamon-applet
 
 # Applet-Dateien
 install -d ~/.local/share/cinnamon/applets/relay-switches@ravel
